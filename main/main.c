@@ -11,13 +11,11 @@
 #include "nvs_flash.h"
 #include "esp_http_client.h"
 #include "esp_ota_ops.h" // Incluir para las operaciones OTA
-#include "cJSON.h" // Asegúrate de tener cJSON instalado
 
 #define WIFI_SSID "MiFibra-D96B" // Cambia esto por el SSID de tu red Wi-Fi
 #define WIFI_PASSWORD "PCTXV2vr"   // Cambia esto por la contraseña de tu red Wi-Fi
-#define THINGSBOARD_URL "http://demo.thingsboard.io/api/v1/OhLePMiP1VhGU3QsZWNg/telemetry"
 #define CHECK_UPDATE_INTERVAL pdMS_TO_TICKS(60000) // Intervalo de verificación de actualización (1 minuto)
-#define OTA_URL "https://raw.githubusercontent.com/Hanane-EB/ota/master/build/app-template.bin" // Cambia esto a la URL de tu firmware
+#define OTA_URL "https://raw.githubusercontent.com/Hanane-EB/ota/master/build/app-template.bin" // URL del firmware
 
 // Control de conexión
 static bool is_connected = false;
@@ -52,33 +50,8 @@ void perform_ota_update(const char *url) {
     
     esp_http_client_config_t config = {
         .url = url,
-        .cert_pem = "-----BEGIN CERTIFICATE-----\n"
-"MIIEozCCBEmgAwIBAgIQTij3hrZsGjuULNLEDrdCpTAKBggqhkjOPQQDAjCBjzEL\n"
-"MAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UE\n"
-"BxMHU2FsZm9yZDEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMTcwNQYDVQQDEy5T\n"
-"ZWN0aWdvIEVDQyBEb21haW4gVmFsaWRhdGlvbiBTZWN1cmUgU2VydmVyIENBMB4X\n"
-"DTI0MDMwNzAwMDAwMFoXDTI1MDMwNzIzNTk1OVowFTETMBEGA1UEAxMKZ2l0aHVi\n"
-"LmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABARO/Ho9XdkY1qh9mAgjOUkW\n"
-"mXTb05jgRulKciMVBuKB3ZHexvCdyoiCRHEMBfFXoZhWkQVMogNLo/lW215X3pGj\n"
-"ggL+MIIC+jAfBgNVHSMEGDAWgBT2hQo7EYbhBH0Oqgss0u7MZHt7rjAdBgNVHQ4E\n"
-"FgQUO2g/NDr1RzTK76ZOPZq9Xm56zJ8wDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB\n"
-"/wQCMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEkGA1UdIARCMEAw\n"
-"NAYLKwYBBAGyMQECAgcwJTAjBggrBgEFBQcCARYXaHR0cHM6Ly9zZWN0aWdvLmNv\n"
-"bS9DUFMwCAYGZ4EMAQIBMIGEBggrBgEFBQcBAQR4MHYwTwYIKwYBBQUHMAKGQ2h0\n"
-"dHA6Ly9jcnQuc2VjdGlnby5jb20vU2VjdGlnb0VDQ0RvbWFpblZhbGlkYXRpb25T\n"
-"ZWN1cmVTZXJ2ZXJDQS5jcnQwIwYIKwYBBQUHMAGGF2h0dHA6Ly9vY3NwLnNlY3Rp\n"
-"Z28uY29tMIIBgAYKKwYBBAHWeQIEAgSCAXAEggFsAWoAdwDPEVbu1S58r/OHW9lp\n"
-"LpvpGnFnSrAX7KwB0lt3zsw7CAAAAY4WOvAZAAAEAwBIMEYCIQD7oNz/2oO8VGaW\n"
-"WrqrsBQBzQH0hRhMLm11oeMpg1fNawIhAKWc0q7Z+mxDVYV/6ov7f/i0H/aAcHSC\n"
-"Ii/QJcECraOpAHYAouMK5EXvva2bfjjtR2d3U9eCW4SU1yteGyzEuVCkR+cAAAGO\n"
-"Fjrv+AAABAMARzBFAiEAyupEIVAMk0c8BVVpF0QbisfoEwy5xJQKQOe8EvMU4W8C\n"
-"IGAIIuzjxBFlHpkqcsa7UZy24y/B6xZnktUw/Ne5q5hCAHcATnWjJ1yaEMM4W2zU\n"
-"3z9S6x3w4I4bjWnAsfpksWKaOd8AAAGOFjrv9wAABAMASDBGAiEA+8OvQzpgRf31\n"
-"uLBsCE8ktCUfvsiRT7zWSqeXliA09TUCIQDcB7Xn97aEDMBKXIbdm5KZ9GjvRyoF\n"
-"9skD5/4GneoMWzAlBgNVHREEHjAcggpnaXRodWIuY29tgg53d3cuZ2l0aHViLmNv\n"
-"bTAKBggqhkjOPQQDAgNIADBFAiEAru2McPr0eNwcWNuDEY0a/rGzXRfRrm+6XfZe\n"
-"SzhYZewCIBq4TUEBCgapv7xvAtRKdVdi/b4m36Uyej1ggyJsiesA\n"
-"-----END CERTIFICATE-----\n",
+        .cert_pem = NULL, // Deshabilitar temporalmente la verificación del certificado
+        .skip_cert_common_name_check = true, // Deshabilitar temporalmente la verificación del nombre común
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -88,7 +61,6 @@ void perform_ota_update(const char *url) {
     if (err == ESP_OK) {
         ESP_LOGI("OTA", "Descargando el firmware...");
 
-        // Aquí debes asegurarte de que la respuesta sea correcta
         int content_length = esp_http_client_get_content_length(client);
         if (content_length <= 0) {
             ESP_LOGE("OTA", "Error: Tamaño del contenido no válido.");
@@ -96,7 +68,6 @@ void perform_ota_update(const char *url) {
             return;
         }
 
-        // Almacenar el firmware descargado
         esp_ota_handle_t update_handle = 0;
         const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
         if (update_partition == NULL) {
@@ -107,38 +78,25 @@ void perform_ota_update(const char *url) {
 
         ESP_ERROR_CHECK(esp_ota_begin(update_partition, content_length, &update_handle));
 
-        // Descarga el firmware en bloques
-        char *buffer = malloc(4096); // Buffer de 4KB
-        if (buffer == NULL) {
-            ESP_LOGE("OTA", "Error: No se pudo asignar memoria para el buffer.");
-            esp_http_client_cleanup(client);
-            return;
-        }
-
+        char buffer[4096]; // Buffer de 4KB
         int data_read = 0;
         while ((data_read = esp_http_client_read(client, buffer, sizeof(buffer))) > 0) {
             ESP_LOGI("OTA", "Escribiendo %d bytes a la partición %s", data_read, update_partition->label);
             esp_err_t write_err = esp_ota_write(update_handle, (const void *)buffer, data_read);
             if (write_err != ESP_OK) {
                 ESP_LOGE("OTA", "Error al escribir en la partición OTA: %s", esp_err_to_name(write_err));
-                free(buffer);
                 esp_http_client_cleanup(client);
                 return;
             }
         }
 
-        // Finalizar la escritura
         esp_err_t end_err = esp_ota_end(update_handle);
         if (end_err != ESP_OK) {
             ESP_LOGE("OTA", "Error finalizando la actualización OTA: %s", esp_err_to_name(end_err));
         } else {
             ESP_LOGI("OTA", "Actualización OTA completada con éxito. Reiniciando...");
-
-            // Reiniciar el dispositivo
             esp_restart();
         }
-
-        free(buffer);
     } else {
         ESP_LOGE("OTA", "Error en la actualización: %s", esp_err_to_name(err));
     }
