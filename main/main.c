@@ -165,7 +165,7 @@ void app_main(void) {
     timeinfo.tm_sec = 0;
 
     // Lógica para establecer un temporizador para la comprobación diaria de actualizaciones
-    while (1) {
+    while (true) {
         time_t now;
         time(&now);
         struct tm *current_time = localtime(&now);
