@@ -17,7 +17,7 @@
 #define WIFI_PASSWORD "PCTXV2vr"   // Cambia esto por la contraseña de tu red Wi-Fi
 #define THINGSBOARD_URL "http://demo.thingsboard.io/api/v1/OhLePMiP1VhGU3QsZWNg/telemetry"
 #define CHECK_UPDATE_INTERVAL pdMS_TO_TICKS(60000) // Intervalo de verificación de actualización (1 minuto)
-#define OTA_URL "https://github.com/Hanane-EB/ota/blob/master/build/app-template.bin" // Cambia esto a la URL de tu firmware
+#define OTA_URL "https://raw.githubusercontent.com/Hanane-EB/ota/master/build/app-template.bin" // Cambia esto a la URL de tu firmware
 
 // Control de conexión
 static bool is_connected = false;
