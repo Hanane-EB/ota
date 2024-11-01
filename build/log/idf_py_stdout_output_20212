@@ -1,0 +1,74 @@
+[1/5] cmd.exe /C "cd /D C:\Users\hanan\workspace\OTA_6\build\esp-idf\esptool_py && C:\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.3.1/components/partition_table/check_sizes.py --offset 0x8000 partition --type app C:/Users/hanan/workspace/OTA_6/build/partition_table/partition-table.bin C:/Users/hanan/workspace/OTA_6/build/app-template.bin"
+app-template.bin binary size 0xdf130 bytes. Smallest app partition is 0x100000 bytes. 0x20ed0 bytes (13%) free.
+[2/5] Performing build step for 'bootloader'
+[1/1] cmd.exe /C "cd /D C:\Users\hanan\workspace\OTA_6\build\bootloader\esp-idf\esptool_py && C:\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.3.1/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 C:/Users/hanan/workspace/OTA_6/build/bootloader/bootloader.bin"
+Bootloader binary size 0x6880 bytes. 0x780 bytes (7%) free.
+[2/3] cmd.exe /C "cd /D C:\Espressif\frameworks\esp-idf-v5.3.1\components\esptoesptool.py --chip esp32 -p COM3 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 40m --flash_size 2MB 0x1000 bootloader/bootloader.bin 0x10000 app-template.bin 0x8000 partition_table/partition-table.bin
+esptool.py v4.8.1
+Serial port COM3
+Connecting......
+Chip is ESP32-D0WD-V3 (revision v3.1)
+Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+Crystal is 40MHz
+MAC: 64:b7:08:c8:c4:e0
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00001000 to 0x00007fff...
+Flash will be erased from 0x00010000 to 0x000effff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+SHA digest in image updated
+Compressed 26752 bytes to 16359...
+Writing at 0x00001000... (100 %)
+Wrote 26752 bytes (16359 compressed) at 0x00001000 in 0.8 seconds (effective 266.8 kbit/s)...
+Hash of data verified.
+Compressed 913712 bytes to 577420...
+Writing at 0x00010000... (2 %)
+Writing at 0x0001c959... (5 %)
+Writing at 0x00025777... (8 %)
+Writing at 0x0002a485... (11 %)
+Writing at 0x00033a36... (13 %)
+Writing at 0x0003c438... (16 %)
+Writing at 0x00041e56... (19 %)
+Writing at 0x00047955... (22 %)
+Writing at 0x0004d51c... (25 %)
+Writing at 0x0005320e... (27 %)
+Writing at 0x0005904f... (30 %)
+Writing at 0x0005ec91... (33 %)
+Writing at 0x000652b5... (36 %)
+Writing at 0x0006a3d9... (38 %)
+Writing at 0x0006f9c1... (41 %)
+Writing at 0x00074cd2... (44 %)
+Writing at 0x0007a2b5... (47 %)
+Writing at 0x0007f960... (50 %)
+Writing at 0x00085084... (52 %)
+Writing at 0x0008b040... (55 %)
+Writing at 0x00090a56... (58 %)
+Writing at 0x0009673b... (61 %)
+Writing at 0x0009c3fc... (63 %)
+Writing at 0x000a1d45... (66 %)
+Writing at 0x000a779d... (69 %)
+Writing at 0x000ad569... (72 %)
+Writing at 0x000b39ec... (75 %)
+Writing at 0x000b94fa... (77 %)
+Writing at 0x000bf0a9... (80 %)
+Writing at 0x000c4a97... (83 %)
+Writing at 0x000cb2d6... (86 %)
+Writing at 0x000d63c5... (88 %)
+Writing at 0x000dc46a... (91 %)
+Writing at 0x000e23d8... (94 %)
+Writing at 0x000e856b... (97 %)
+Writing at 0x000ed82c... (100 %)
+Wrote 913712 bytes (577420 compressed) at 0x00010000 in 13.3 seconds (effective 548.5 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 103...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.1 seconds (effective 334.4 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+ol_py && C:\Espressif\tools\cmake\3.24.0\bin\cmake.exe -D IDF_PATH=C:/Espressif/frameworks/esp-idf-v5.3.1 -D SERIAL_TOOL=C:/Espressif/python_env/idf5.3_py3.11_env/Scripts/python.exe;;C:/Espressif/frameworks/esp-idf-v5.3.1/components/esptool_py/esptool/esptool.py;--chip;esp32 -D SERIAL_TOOL_ARGS=--before=default_reset;--after=hard_reset;write_flash;@flash_args -D WORKING_DIRECTORY=C:/Users/hanan/workspace/OTA_6/build -P C:/Espressif/frameworks/esp-idf-v5.3.1/components/esptool_py/run_serial_tool.cmake"
