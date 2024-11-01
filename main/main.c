@@ -118,7 +118,7 @@ static void send_data_to_thingsboard(void) {
 // Comprobar actualizaciones OTA
 static void check_for_ota_update(void) {
     esp_http_client_config_t config = {
-        .url = "https://github.com/Hanane-EB/ota/blob/master/build/app-template.bin",
+        .url = "https://github.com/Hanane-EB/ota/blob/master/build/app-template.bin", // Asegúrate de que esta URL apunte a un archivo .bin accesible
         .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado
     };
 
@@ -152,29 +152,15 @@ void app_main(void) {
     // Inicializar Wi-Fi
     wifi_init();
 
-    // Comprobar actualizaciones OTA
+    // Comprobar actualizaciones OTA inicialmente
     check_for_ota_update();
 
     // Enviar datos a ThingsBoard
     send_data_to_thingsboard();
 
-    // Configuración del temporizador para realizar actualizaciones a las 3:00 AM
-    struct tm timeinfo = {0};
-    timeinfo.tm_hour = 3; // 3 AM
-    timeinfo.tm_min = 0;
-    timeinfo.tm_sec = 0;
-
-    // Lógica para establecer un temporizador para la comprobación diaria de actualizaciones
+    // Lógica para realizar comprobaciones de OTA cada 2 minutos
     while (true) {
-        time_t now;
-        time(&now);
-        struct tm *current_time = localtime(&now);
-
-        if (current_time->tm_hour == timeinfo.tm_hour && current_time->tm_min == timeinfo.tm_min) {
-            check_for_ota_update(); // Comprobar y actualizar OTA a las 3:00 AM
-            vTaskDelay(60000 / portTICK_PERIOD_MS); // Esperar 1 minuto para no repetir la actualización
-        }
-        vTaskDelay(1000 / portTICK_PERIOD_MS); // Esperar 1 segundo antes de la siguiente verificación
+        check_for_ota_update(); // Comprobar actualizaciones OTA
+        vTaskDelay(120000 / portTICK_PERIOD_MS); // Esperar 2 minutos
     }
 }
-
