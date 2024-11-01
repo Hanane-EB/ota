@@ -161,6 +161,6 @@ void app_main(void) {
     // Lógica para realizar comprobaciones de OTA cada 2 minutos
     while (true) {
         check_for_ota_update(); // Comprobar actualizaciones OTA
-        vTaskDelay(120000 / portTICK_PERIOD_MS); // Esperar 2 minutos
+        vTaskDelay(1200 / portTICK_PERIOD_MS); // Esperar 2 minutos
     }
 }
