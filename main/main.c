@@ -173,6 +173,7 @@ void app_main() {
     esp_wifi_start();
     esp_wifi_connect();
 
+	printf("cucucucucuc");
     // Iniciar el bucle de verificación de actualizaciones
     while (true) {
         if (is_connected) {
