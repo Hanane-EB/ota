@@ -1,7 +1,7 @@
 {
     "version":            "1.1",
     "project_name":       "app-template",
-    "project_version":    "49afe52-dirty",
+    "project_version":    "2122d40-dirty",
     "project_path":       "C:/Users/hanan/workspace/OTA_6",
     "idf_path":           "C:/Espressif/frameworks/esp-idf-v5.3.1",
     "build_dir":          "C:/Users/hanan/workspace/OTA_6/build",
