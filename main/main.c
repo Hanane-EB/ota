@@ -1,171 +1,110 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "esp_system.h"
+#include "sdkconfig.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "freertos/timers.h"
+#include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_http_client.h"
-#include "esp_event.h"
-#include "esp_wifi.h"
-#include "freertos/event_groups.h"
-#include "time.h" // Para manejo de tiempo
+#include "esp_ota_ops.h"
 
-static const char *TAG = "ota_example";
+#define WIFI_SSID "AndroidAP1477" // Cambia esto por el SSID de tu red Wi-Fi
+#define WIFI_PASSWORD "20030036" // Cambia esto por la contraseña de tu red Wi-Fi
+#define THINGSBOARD_URL "https://demo.thingsboard.io/api/v1/oz7wJXZiuAxkUrB5gmd0/firmware" // Cambia la URL según sea necesario
+#define OTA_URL "https://github.com/Hanane-EB/ota/raw/master/build/app-template.bin" // URL del firmware
+#define CONTENT_TYPE "application/json"
 
-#define WIFI_SSID "MiFibra-D96B"          // Reemplaza con tu SSID
-#define WIFI_PASS "PCTXV2vr"              // Reemplaza con tu contraseña
-#define THINGSBOARD_TOKEN "OhLePMiP1VhGU3QsZWNg" // Reemplaza con el token de tu dispositivo
-#define THINGSBOARD_SERVER "http://demo.thingsboard.io" // Cambia si usas tu propio servidor
+#define CHECK_INTERVAL pdMS_TO_TICKS(60000) // Intervalo de chequeo de 1 minuto
 
-static EventGroupHandle_t wifi_event_group;
-const int CONNECTED_BIT = BIT0;
+static bool is_connected = false;
 
-// Funciones estáticas
-static void wifi_init(void);
-static void send_data_to_thingsboard(void);
-static void check_for_ota_update(void);
-
-// Manejador de eventos Wi-Fi
-static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+// Función para manejar los eventos Wi-Fi e IP
+static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT) {
         switch (event_id) {
             case WIFI_EVENT_STA_START:
                 esp_wifi_connect();
                 break;
+
             case WIFI_EVENT_STA_DISCONNECTED:
-                ESP_LOGI(TAG, "Desconectado, reconectando...");
-                esp_wifi_connect();
-                xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+                is_connected = false; // Desconectar
+                esp_wifi_connect(); // Intentar reconectar
+                ESP_LOGI("WiFi", "Intentando reconectar...");
                 break;
-            case WIFI_EVENT_STA_CONNECTED:
-                ESP_LOGI(TAG, "Conectado al AP");
-                break;
-        }
-    } else if (event_base == IP_EVENT) {
-        switch (event_id) {
-            case IP_EVENT_STA_GOT_IP:
-                ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
-                ESP_LOGI(TAG, "Dirección IP obtenida: %s", ip4addr_ntoa(&event->ip_info.ip));
-                xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
+
+            default:
                 break;
         }
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
+        ESP_LOGI("WiFi", "IP obtenido: " IPSTR, IP2STR(&event->ip_info.ip));
+        is_connected = true; // Conectado
     }
+}
+
+// Función para realizar la actualización OTA
+void perform_ota_update(const char *ota_url) {
+    ESP_LOGI("OTA", "Iniciando actualización OTA desde %s", ota_url);
+
+    esp_http_client_config_t config = {
+        .url = ota_url,
+        .cert_pem = NULL, // Cambia esto si necesitas verificación de certificado
+        .event_handler = NULL
+    };
+
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    esp_err_t err = esp_http_client_perform(client);
+
+    if (err == ESP_OK) {
+        ESP_LOGI("OTA", "OTA realizada con éxito");
+    } else {
+        ESP_LOGE("OTA", "Error en OTA: %s", esp_err_to_name(err));
+    }
+
+    esp_http_client_cleanup(client);
 }
 
 // Inicializa Wi-Fi
 static void wifi_init(void) {
-    wifi_event_group = xEventGroupCreate();
-
-    esp_netif_init();
-    esp_event_loop_create_default();
-    esp_netif_create_default_wifi_sta();
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
+    assert(sta_netif);
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    esp_wifi_init(&cfg);
-    esp_wifi_set_mode(WIFI_MODE_STA);
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, NULL));
 
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
+            .password = WIFI_PASSWORD,
         },
     };
 
-    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
-    esp_wifi_start();
-    esp_wifi_connect();
-
-    ESP_LOGI(TAG, "Conectando a Wi-Fi...");
-
-    // Esperar hasta conectarse
-    EventBits_t bits = xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, 10000 / portTICK_PERIOD_MS);
-    if (bits & CONNECTED_BIT) {
-        ESP_LOGI(TAG, "Conectado a %s", WIFI_SSID);
-    } else {
-        ESP_LOGE(TAG, "Fallo en la conexión a Wi-Fi");
-    }
+    ESP_LOGI("WiFi", "Conectando al AP: %s", wifi_config.sta.ssid);
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 }
 
-// Callback para manejar eventos de HTTP
-esp_err_t http_event_handler(esp_http_client_event_t *evt) {
-    switch (evt->event_id) {
-        case HTTP_EVENT_ERROR:
-            ESP_LOGE(TAG, "Error de HTTP");
-            break;
-        case HTTP_EVENT_ON_CONNECTED:
-            ESP_LOGI(TAG, "Conectado al servidor HTTP");
-            break;
-        case HTTP_EVENT_ON_HEADER:
-            // Asegurarse de que evt->data sea un puntero válido antes de imprimir
-            if (evt->data && evt->data_len > 0) {
-                ESP_LOGI(TAG, "Cabecera: %.*s", evt->data_len, (char*)evt->data);
-            }
-            break;
-        case HTTP_EVENT_ON_DATA:
-            // Solo se manejarán los datos si no son una respuesta en fragmentos
-            if (!esp_http_client_is_chunked_response(evt->client)) {
-                // Manejo de los datos recibidos
-                ESP_LOGI(TAG, "Datos recibidos: %.*s", evt->data_len, (char*)evt->data);
-            }
-            break;
-        case HTTP_EVENT_DISCONNECTED:  // Cambiado aquí
-            ESP_LOGI(TAG, "Desconectado del servidor HTTP");
-            break;
-        default:
-            break;
-    }
-    return ESP_OK;
-}
-
-// Enviar datos a ThingsBoard
-static void send_data_to_thingsboard(void) {
-    esp_http_client_config_t config = {
-        .url = THINGSBOARD_SERVER "/api/v1/" THINGSBOARD_TOKEN "/telemetry",
-        .method = HTTP_METHOD_POST,
-        .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado
-    };
-
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-
-    // Enviar datos en una sola línea, como en el comando curl
-    const char *data = "{\"temperature\": 85}";  // Cambia este valor según sea necesario
-
-    // Establecer el campo del post con el tipo de contenido
-    esp_http_client_set_header(client, "Content-Type", "application/json");
-    esp_http_client_set_post_field(client, data, strlen(data)); 
-
-    ESP_LOGI(TAG, "Intentando enviar datos a ThingsBoard...");
-
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Datos enviados a ThingsBoard correctamente.");
-    } else {
-        ESP_LOGE(TAG, "Error enviando datos a ThingsBoard: %s", esp_err_to_name(err));
+// Función para verificar actualizaciones de firmware
+void check_for_updates(TimerHandle_t xTimer) {
+    if (!is_connected) {
+        ESP_LOGI("WiFi", "No hay conexión a la red, no se puede verificar actualizaciones.");
+        return;
     }
 
-    esp_http_client_cleanup(client);
-}
+    // Aquí se llamaría a la API de ThingsBoard para verificar si hay una nueva versión
+    // y obtener la URL del firmware a actualizar.
 
-// Comprobar actualizaciones OTA
-static void check_for_ota_update(void) {
-    esp_http_client_config_t config = {
-        .url = "https://raw.githubusercontent.com/Hanane-EB/ota/master/build/app-template.bin", // Asegúrate que esta URL sea correcta
-        .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado, por ahora lo dejaremos NULL
-        .event_handler = http_event_handler, // Usar el manejador de eventos
-    };
-
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    ESP_LOGI(TAG, "Iniciando actualización OTA desde %s", config.url);
-
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Firmware descargado correctamente.");
-        // Aquí deberías manejar la actualización del firmware
-    } else {
-        ESP_LOGE(TAG, "Error en la descarga del firmware: %s", esp_err_to_name(err));
-    }
-
-    esp_http_client_cleanup(client);
+    // Por simplicidad, se está utilizando una URL de OTA fija. Debes reemplazarla con la URL obtenida de ThingsBoard.
+    perform_ota_update(OTA_URL);
 }
 
 void app_main(void) {
@@ -177,19 +116,21 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
 
-    // Registro del manejador de eventos Wi-Fi
-    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL);
-    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL);
-
     // Inicializar Wi-Fi
     wifi_init();
 
-    // Enviar datos a ThingsBoard
-    send_data_to_thingsboard();
+    // Crear un temporizador para verificar actualizaciones cada minuto
+    TimerHandle_t update_check_timer = xTimerCreate(
+        "UpdateCheckTimer",
+        CHECK_INTERVAL, // Cada 1 minuto
+        pdTRUE, // Auto-reload
+        (void *) 0,
+        check_for_updates
+    );
 
-    // Comprobar actualizaciones OTA cada 2 minutos
-    while (true) {
-        check_for_ota_update(); // Comprobar y actualizar OTA
-        vTaskDelay(60000 / portTICK_PERIOD_MS); // Esperar 2 minutos
+    if (update_check_timer != NULL) {
+        xTimerStart(update_check_timer, 0);
+    } else {
+        ESP_LOGE("OTA", "Error creando el temporizador de verificación de actualizaciones");
     }
 }
