@@ -22,9 +22,6 @@
 // Control de conexión
 static bool is_connected = false;
 
-// Declaración anticipada de la función check_for_updates
-void check_for_updates(TimerHandle_t xTimer);
-
 // Función para manejar eventos de Wi-Fi
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT) {
@@ -46,9 +43,6 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI("WiFi", "IP obtenido: " IPSTR, IP2STR(&event->ip_info.ip));
         is_connected = true;
-
-        // Verificar actualizaciones al conectar
-        check_for_updates(NULL);
     }
 }
 
@@ -88,13 +82,20 @@ void perform_ota_update(const char *url) {
         ESP_ERROR_CHECK(esp_ota_begin(update_partition, content_length, &update_handle));
 
         // Descarga el firmware en bloques
-        char buffer[4096]; // Buffer de 4KB
+        char *buffer = malloc(4096); // Buffer de 4KB
+        if (buffer == NULL) {
+            ESP_LOGE("OTA", "Error: No se pudo asignar memoria para el buffer.");
+            esp_http_client_cleanup(client);
+            return;
+        }
+
         int data_read = 0;
         while ((data_read = esp_http_client_read(client, buffer, sizeof(buffer))) > 0) {
             ESP_LOGI("OTA", "Escribiendo %d bytes a la partición %s", data_read, update_partition->label);
             esp_err_t write_err = esp_ota_write(update_handle, (const void *)buffer, data_read);
             if (write_err != ESP_OK) {
                 ESP_LOGE("OTA", "Error al escribir en la partición OTA: %s", esp_err_to_name(write_err));
+                free(buffer);
                 esp_http_client_cleanup(client);
                 return;
             }
@@ -110,6 +111,8 @@ void perform_ota_update(const char *url) {
             // Reiniciar el dispositivo
             esp_restart();
         }
+
+        free(buffer);
     } else {
         ESP_LOGE("OTA", "Error en la actualización: %s", esp_err_to_name(err));
     }
@@ -183,4 +186,3 @@ void app_main(void) {
         ESP_LOGE("OTA", "Error creando el temporizador de verificación de actualizaciones");
     }
 }
-
