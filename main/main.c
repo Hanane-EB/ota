@@ -86,6 +86,37 @@ static void wifi_init(void) {
     }
 }
 
+// Callback para manejar eventos de HTTP
+esp_err_t http_event_handler(esp_http_client_event_t *evt) {
+    switch (evt->event_id) {
+        case HTTP_EVENT_ERROR:
+            ESP_LOGE(TAG, "Error de HTTP");
+            break;
+        case HTTP_EVENT_ON_CONNECTED:
+            ESP_LOGI(TAG, "Conectado al servidor HTTP");
+            break;
+        case HTTP_EVENT_ON_HEADER:
+            // Asegurarse de que evt->data sea un puntero válido antes de imprimir
+            if (evt->data && evt->data_len > 0) {
+                ESP_LOGI(TAG, "Cabecera: %.*s", evt->data_len, (char*)evt->data);
+            }
+            break;
+        case HTTP_EVENT_ON_DATA:
+            // Solo se manejarán los datos si no son una respuesta en fragmentos
+            if (!esp_http_client_is_chunked_response(evt->client)) {
+                // Manejo de los datos recibidos
+                ESP_LOGI(TAG, "Datos recibidos: %.*s", evt->data_len, (char*)evt->data);
+            }
+            break;
+        case HTTP_EVENT_DISCONNECTED:  // Cambiado aquí
+            ESP_LOGI(TAG, "Desconectado del servidor HTTP");
+            break;
+        default:
+            break;
+    }
+    return ESP_OK;
+}
+
 // Enviar datos a ThingsBoard
 static void send_data_to_thingsboard(void) {
     esp_http_client_config_t config = {
@@ -118,8 +149,9 @@ static void send_data_to_thingsboard(void) {
 // Comprobar actualizaciones OTA
 static void check_for_ota_update(void) {
     esp_http_client_config_t config = {
-        .url = "https://github.com/Hanane-EB/ota/raw/master/build/app-template.bin", // Asegúrate que esta URL sea correcta
+        .url = "https://raw.githubusercontent.com/Hanane-EB/ota/master/build/app-template.bin", // Asegúrate que esta URL sea correcta
         .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado, por ahora lo dejaremos NULL
+        .event_handler = http_event_handler, // Usar el manejador de eventos
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -158,6 +190,6 @@ void app_main(void) {
     // Comprobar actualizaciones OTA cada 2 minutos
     while (true) {
         check_for_ota_update(); // Comprobar y actualizar OTA
-        vTaskDelay(12000 / portTICK_PERIOD_MS); // Esperar 2 minutos
+        vTaskDelay(60000 / portTICK_PERIOD_MS); // Esperar 2 minutos
     }
 }
