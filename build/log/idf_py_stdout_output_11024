@@ -1,5 +1,5 @@
 [1/5] cmd.exe /C "cd /D C:\Users\hanan\workspace\OTA_6\build\esp-idf\esptool_py && C:\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.3.1/components/partition_table/check_sizes.py --offset 0x8000 partition --type app C:/Users/hanan/workspace/OTA_6/build/partition_table/partition-table.bin C:/Users/hanan/workspace/OTA_6/build/app-template.bin"
-app-template.bin binary size 0xdd4c0 bytes. Smallest app partition is 0x100000 bytes. 0x22b40 bytes (14%) free.
+app-template.bin binary size 0xdbdc0 bytes. Smallest app partition is 0x100000 bytes. 0x24240 bytes (14%) free.
 [2/5] Performing build step for 'bootloader'
 [1/1] cmd.exe /C "cd /D C:\Users\hanan\workspace\OTA_6\build\bootloader\esp-idf\esptool_py && C:\Espressif\python_env\idf5.3_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.3.1/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 C:/Users/hanan/workspace/OTA_6/build/bootloader/bootloader.bin"
 Bootloader binary size 0x6880 bytes. 0x780 bytes (7%) free.
@@ -18,54 +18,54 @@ Changing baud rate to 460800
 Changed.
 Configuring flash size...
 Flash will be erased from 0x00001000 to 0x00007fff...
-Flash will be erased from 0x00010000 to 0x000edfff...
+Flash will be erased from 0x00010000 to 0x000ebfff...
 Flash will be erased from 0x00008000 to 0x00008fff...
 SHA digest in image updated
 Compressed 26752 bytes to 16359...
 Writing at 0x00001000... (100 %)
-Wrote 26752 bytes (16359 compressed) at 0x00001000 in 0.8 seconds (effective 265.4 kbit/s)...
+Wrote 26752 bytes (16359 compressed) at 0x00001000 in 0.8 seconds (effective 268.1 kbit/s)...
 Hash of data verified.
-Compressed 906432 bytes to 572583...
+Compressed 900544 bytes to 569064...
 Writing at 0x00010000... (2 %)
-Writing at 0x0001ca96... (5 %)
-Writing at 0x00025ab1... (8 %)
-Writing at 0x0002a9bd... (11 %)
-Writing at 0x00033c79... (14 %)
-Writing at 0x0003c706... (17 %)
-Writing at 0x000421f3... (20 %)
-Writing at 0x00047ca0... (22 %)
-Writing at 0x0004d80c... (25 %)
-Writing at 0x00053402... (28 %)
-Writing at 0x00059374... (31 %)
-Writing at 0x0005eeae... (34 %)
-Writing at 0x000655cf... (37 %)
-Writing at 0x0006a6e8... (40 %)
-Writing at 0x0006fb8f... (42 %)
-Writing at 0x00075072... (45 %)
-Writing at 0x0007a457... (48 %)
-Writing at 0x0007fb3a... (51 %)
-Writing at 0x0008542a... (54 %)
-Writing at 0x0008b337... (57 %)
-Writing at 0x00090cc7... (60 %)
-Writing at 0x00096984... (62 %)
-Writing at 0x0009c559... (65 %)
-Writing at 0x000a1fc7... (68 %)
-Writing at 0x000a79ae... (71 %)
-Writing at 0x000ad759... (74 %)
-Writing at 0x000b3c88... (77 %)
-Writing at 0x000b97c7... (80 %)
-Writing at 0x000bf236... (82 %)
-Writing at 0x000c4ddb... (85 %)
-Writing at 0x000cdd3c... (88 %)
-Writing at 0x000d66b8... (91 %)
-Writing at 0x000dc5fc... (94 %)
-Writing at 0x000e26ee... (97 %)
-Writing at 0x000e80b8... (100 %)
-Wrote 906432 bytes (572583 compressed) at 0x00010000 in 13.3 seconds (effective 546.9 kbit/s)...
+Writing at 0x0001c959... (5 %)
+Writing at 0x0002577b... (8 %)
+Writing at 0x0002a47c... (11 %)
+Writing at 0x00033967... (14 %)
+Writing at 0x0003c24a... (17 %)
+Writing at 0x00041c6a... (20 %)
+Writing at 0x0004778f... (22 %)
+Writing at 0x0004d31f... (25 %)
+Writing at 0x00052fd7... (28 %)
+Writing at 0x00058e90... (31 %)
+Writing at 0x0005ea7d... (34 %)
+Writing at 0x000650fd... (37 %)
+Writing at 0x0006a22c... (40 %)
+Writing at 0x0006f7de... (42 %)
+Writing at 0x00074b25... (45 %)
+Writing at 0x0007a036... (48 %)
+Writing at 0x0007f7be... (51 %)
+Writing at 0x00084ec1... (54 %)
+Writing at 0x0008ae1b... (57 %)
+Writing at 0x0009089f... (60 %)
+Writing at 0x000964f9... (62 %)
+Writing at 0x0009c1f5... (65 %)
+Writing at 0x000a1b93... (68 %)
+Writing at 0x000a75ff... (71 %)
+Writing at 0x000ad3a2... (74 %)
+Writing at 0x000b3818... (77 %)
+Writing at 0x000b9324... (80 %)
+Writing at 0x000beecf... (82 %)
+Writing at 0x000c4879... (85 %)
+Writing at 0x000ce6fa... (88 %)
+Writing at 0x000d6803... (91 %)
+Writing at 0x000dc307... (94 %)
+Writing at 0x000e257d... (97 %)
+Writing at 0x000e7b7d... (100 %)
+Wrote 900544 bytes (569064 compressed) at 0x00010000 in 13.2 seconds (effective 544.3 kbit/s)...
 Hash of data verified.
 Compressed 3072 bytes to 103...
 Writing at 0x00008000... (100 %)
-Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.1 seconds (effective 341.9 kbit/s)...
+Wrote 3072 bytes (103 compressed) at 0x00008000 in 0.1 seconds (effective 391.3 kbit/s)...
 Hash of data verified.
 
 Leaving...

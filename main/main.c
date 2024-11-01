@@ -118,8 +118,8 @@ static void send_data_to_thingsboard(void) {
 // Comprobar actualizaciones OTA
 static void check_for_ota_update(void) {
     esp_http_client_config_t config = {
-        .url = "https://github.com/Hanane-EB/ota/blob/master/build/app-template.bin", // Asegúrate de que esta URL apunte a un archivo .bin accesible
-        .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado
+        .url = "https://github.com/Hanane-EB/ota/raw/master/build/app-template.bin", // Asegúrate que esta URL sea correcta
+        .cert_pem = NULL, // Cambia esto si quieres proporcionar un certificado, por ahora lo dejaremos NULL
     };
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
@@ -152,15 +152,12 @@ void app_main(void) {
     // Inicializar Wi-Fi
     wifi_init();
 
-    // Comprobar actualizaciones OTA inicialmente
-    check_for_ota_update();
-
     // Enviar datos a ThingsBoard
     send_data_to_thingsboard();
 
-    // Lógica para realizar comprobaciones de OTA cada 2 minutos
+    // Comprobar actualizaciones OTA cada 2 minutos
     while (true) {
-        check_for_ota_update(); // Comprobar actualizaciones OTA
-        vTaskDelay(1200 / portTICK_PERIOD_MS); // Esperar 2 minutos
+        check_for_ota_update(); // Comprobar y actualizar OTA
+        vTaskDelay(12000 / portTICK_PERIOD_MS); // Esperar 2 minutos
     }
 }
