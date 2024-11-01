@@ -10,7 +10,8 @@
 #include "esp_pm.h"
 #include "nvs_flash.h"
 #include "esp_http_client.h"
-#include "esp_ota_ops.h"
+#include "esp_ota_ops.h" // Incluir para las operaciones OTA
+#include "cJSON.h" // Asegúrate de tener cJSON instalado
 
 #define WIFI_SSID "MiFibra-D96B" // Cambia esto por el SSID de tu red Wi-Fi
 #define WIFI_PASSWORD "PCTXV2vr"   // Cambia esto por la contraseña de tu red Wi-Fi
@@ -20,7 +21,7 @@
 // Control de conexión
 static bool is_connected = false;
 
-// Certificado de seguridad (ejemplo, asegúrate de usar el correcto)
+// Certificado de seguridad (reemplaza con tu certificado)
 const char *cert_pem = \
 "-----BEGIN CERTIFICATE-----\n"
 "MIIEozCCBEmgAwIBAgIQTij3hrZsGjuULNLEDrdCpTAKBggqhkjOPQQDAjCBjzEL\n"
@@ -57,11 +58,13 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
             case WIFI_EVENT_STA_START:
                 esp_wifi_connect();
                 break;
+
             case WIFI_EVENT_STA_DISCONNECTED:
                 is_connected = false;
                 esp_wifi_connect();
                 ESP_LOGI("WiFi", "Intentando reconectar...");
                 break;
+
             default:
                 break;
         }
@@ -85,94 +88,58 @@ void perform_ota_update(const char *url) {
 
     // Realizar la actualización OTA
     esp_err_t err = esp_http_client_perform(client);
-    if (err != ESP_OK) {
-        ESP_LOGE("OTA", "Error en la conexión HTTP: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
-        return;
-    }
+    if (err == ESP_OK) {
+        ESP_LOGI("OTA", "Descargando el firmware...");
 
-    ESP_LOGI("OTA", "Descargando el firmware...");
-
-    int content_length = esp_http_client_get_content_length(client);
-    if (content_length <= 0) {
-        ESP_LOGE("OTA", "Error: Tamaño del contenido no válido.");
-        esp_http_client_cleanup(client);
-        return;
-    }
-
-    esp_ota_handle_t update_handle = 0;
-    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-    if (update_partition == NULL) {
-        ESP_LOGE("OTA", "Error: No hay partición para actualizaciones.");
-        esp_http_client_cleanup(client);
-        return;
-    }
-
-    ESP_ERROR_CHECK(esp_ota_begin(update_partition, content_length, &update_handle));
-
-    char buffer[4096]; // Buffer de 4KB
-    int data_read = 0;
-    while ((data_read = esp_http_client_read(client, buffer, sizeof(buffer))) > 0) {
-        ESP_LOGI("OTA", "Escribiendo %d bytes a la partición %s", data_read, update_partition->label);
-        esp_err_t write_err = esp_ota_write(update_handle, (const void *)buffer, data_read);
-        if (write_err != ESP_OK) {
-            ESP_LOGE("OTA", "Error al escribir en la partición OTA: %s", esp_err_to_name(write_err));
+        // Aquí debes asegurarte de que la respuesta sea correcta
+        int content_length = esp_http_client_get_content_length(client);
+        if (content_length <= 0) {
+            ESP_LOGE("OTA", "Error: Tamaño del contenido no válido.");
             esp_http_client_cleanup(client);
             return;
         }
-    }
 
-    esp_err_t end_err = esp_ota_end(update_handle);
-    if (end_err != ESP_OK) {
-        ESP_LOGE("OTA", "Error finalizando la actualización OTA: %s", esp_err_to_name(end_err));
+        // Almacenar el firmware descargado
+        esp_ota_handle_t update_handle = 0;
+        const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+        if (update_partition == NULL) {
+            ESP_LOGE("OTA", "Error: No hay partición para actualizaciones.");
+            esp_http_client_cleanup(client);
+            return;
+        }
+
+        ESP_ERROR_CHECK(esp_ota_begin(update_partition, content_length, &update_handle));
+
+        // Descarga el firmware en bloques
+        char buffer[4096]; // Buffer de 4KB
+        int data_read = 0;
+        while ((data_read = esp_http_client_read(client, buffer, sizeof(buffer))) > 0) {
+            ESP_LOGI("OTA", "Escribiendo %d bytes a la partición %s", data_read, update_partition->label);
+            esp_err_t write_err = esp_ota_write(update_handle, (const void *)buffer, data_read);
+            if (write_err != ESP_OK) {
+                ESP_LOGE("OTA", "Error al escribir en la partición OTA: %s", esp_err_to_name(write_err));
+                esp_http_client_cleanup(client);
+                return;
+            }
+        }
+
+        // Termina la actualización
+        esp_err_t end_err = esp_ota_end(update_handle);
+        if (end_err != ESP_OK) {
+            ESP_LOGE("OTA", "Error finalizando la actualización OTA: %s", esp_err_to_name(end_err));
+        } else {
+            ESP_LOGI("OTA", "Actualización OTA completada con éxito. Reiniciando...");
+            esp_restart();
+        }
     } else {
-        ESP_LOGI("OTA", "Actualización OTA completada con éxito. Reiniciando...");
-        esp_restart();
+        ESP_LOGE("OTA", "Error en la conexión HTTP: %s", esp_err_to_name(err));
     }
 
     esp_http_client_cleanup(client);
 }
 
-// Función para verificar si hay actualizaciones
-void check_for_updates(TimerHandle_t xTimer) {
-    if (!is_connected) {
-        ESP_LOGI("WiFi", "No hay conexión a la red, no se puede verificar actualizaciones.");
-        return;
-    }
-
-    ESP_LOGI("OTA", "Verificando actualizaciones de firmware...");
-    perform_ota_update(OTA_URL);
-}
-
-// Inicializa Wi-Fi
-static void wifi_init(void) {
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, NULL));
-
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASSWORD,
-        },
-    };
-
-    ESP_LOGI("WiFi", "Conectando al AP: %s", wifi_config.sta.ssid);
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    esp_wifi_connect();
-}
-
 // Función principal
-void app_main(void) {
+void app_main() {
     // Inicializar NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -181,21 +148,36 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
 
+    // Inicializar el evento de Wi-Fi
+    esp_event_loop_create_default();
+
     // Inicializar Wi-Fi
-    wifi_init();
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    // Crear un temporizador para verificar actualizaciones periódicamente
-    TimerHandle_t update_check_timer = xTimerCreate(
-        "UpdateCheckTimer",
-        CHECK_UPDATE_INTERVAL,
-        pdTRUE, // Timer auto-reload
-        (void *)0,
-        check_for_updates
-    );
+    // Configurar Wi-Fi
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASSWORD,
+        },
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 
-    if (update_check_timer != NULL) {
-        xTimerStart(update_check_timer, 0);
-    } else {
-        ESP_LOGE("OTA", "Error creando el temporizador de verificación de actualizaciones");
+    // Inicializar el manejo de eventos
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL);
+
+    // Conectar a la red Wi-Fi
+    esp_wifi_start();
+    esp_wifi_connect();
+
+    // Iniciar el bucle de verificación de actualizaciones
+    while (true) {
+        if (is_connected) {
+            perform_ota_update(OTA_URL);
+        }
+        vTaskDelay(CHECK_UPDATE_INTERVAL);
     }
 }
